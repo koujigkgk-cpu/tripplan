@@ -47,7 +47,7 @@
     </c:forEach>
 
     <div style="text-align: center; margin-top: 20px;">
-        <a href="index.jsp" style="text-decoration: none; color: #666;">← 戻る</a>
+        <a href="tripplan.jsp" style="text-decoration: none; color: #666;">← 戻る</a>
     </div>
 </div>
 

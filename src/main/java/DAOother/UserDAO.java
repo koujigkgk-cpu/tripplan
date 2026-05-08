@@ -12,7 +12,7 @@ public class UserDAO {
     // データベース接続情報（ご自身の環境に合わせて password を書き換えてください）
     private final String URL = "jdbc:mysql://localhost:3306/tripplan_db?useSSL=false&allowPublicKeyRetrieval=true";
     private final String USER = "root";
-    private final String PASS = "pass"; 
+    private final String PASS = "carp8912"; 
 
     /**
      * 新規ユーザーを登録する

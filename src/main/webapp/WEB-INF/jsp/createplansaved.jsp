@@ -246,7 +246,7 @@ var jspConfig = {
 			</div>
 
 			<!-- リストのコンテナも念のため消しておきます -->
-			<div id="waypoint-list-container"\></div>
+			<div id="waypoint-list-container"></div>
 
 			<!-- 📍 復路中継地 -->
 			<div class="section-title"

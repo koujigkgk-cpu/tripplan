@@ -355,20 +355,26 @@ function renderWaypointList() {
     if (container) {
         container.innerHTML = "";
         waypoints.forEach(function(wp) {
+            // IDがない場合のバックアップ処理（重要）
+            if (!wp.id) { wp.id = "wp_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5); }
+
             var div = document.createElement('div');
             div.className = 'waypoint-item';
             div.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center;">' +
                 '<span style="font-weight:bold;">往：📍 ' + wp.name + '</span>' +
-                '<button type="button" class="remove-btn" onclick="removeWaypoint(\'' + wp.id + '\', false)">削除</button></div>' +
+                // 引用符のエラーを防ぐため ID を String で確実に囲む
+                '<button type="button" class="remove-btn" onclick="removeWaypoint(\'' + String(wp.id) + '\', false)">削除</button></div>' +
                 '<div style="margin-top:5px; font-size:0.85em; color:#666;">' +
                 '⏱ 滞在：<input type="number" class="stay-time-input" style="width:50px;" value="' + (wp.stayTime || 0) + '" oninput="updateStayTime(\'' + wp.id + '\', this.value); updateTimeline();"> 分' +
                 '</div>';
             container.appendChild(div);
 
-            // 地図へのピン再描画：createMarker を使うことで青色化を防ぐ
-            if (wp.latlng && !isReturnTrip) {
+            // マーカー再描画処理
+            if (wp.latlng && map) {
                 if (wp.marker) map.removeLayer(wp.marker);
-                wp.marker = createMarker(wp, 'red');
+                if (typeof createMarker === 'function') {
+                    wp.marker = createMarker(wp, 'red');
+                }
             }
         });
     }
@@ -378,24 +384,28 @@ function renderWaypointList() {
     if (returnContainer) {
         returnContainer.innerHTML = "";
         returnWaypoints.forEach(function(wp) {
+            if (!wp.id) { wp.id = "ret_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5); }
+
             var div = document.createElement('div');
             div.className = 'waypoint-item';
             div.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center;">' +
                 '<span style="font-weight:bold; color:#e67e22;">復：📍 ' + wp.name + '</span>' +
-                '<button type="button" class="remove-btn" onclick="removeWaypoint(\'' + wp.id + '\', true)">削除</button></div>' +
+                '<button type="button" class="remove-btn" onclick="removeWaypoint(\'' + String(wp.id) + '\', true)">削除</button></div>' +
                 '<div style="margin-top:5px; font-size:0.85em; color:#666;">' +
                 '⏱ 滞在：<input type="number" class="stay-time-input" style="width:50px;" value="' + (wp.stayTime || 0) + '" oninput="updateStayTime(\'' + wp.id + '\', this.value); updateTimeline();"> 分' +
                 '</div>';
             returnContainer.appendChild(div);
 
-            // 地図へのピン再描画：こちらも createMarker に統一
-            if (wp.latlng && isReturnTrip) {
+            if (wp.latlng && map) {
                 if (wp.marker) map.removeLayer(wp.marker);
-                wp.marker = createMarker(wp, 'red');
+                if (typeof createMarker === 'function') {
+                    wp.marker = createMarker(wp, 'red');
+                }
             }
         });
     }
-} function updateLocationData(id, latlng) {
+}
+function updateLocationData(id, latlng) {
     var target = (id === 'origin') ? locations.origin :
         (id === 'dest') ? locations.dest :
             (waypoints.find(w => w.id === id) || returnWaypoints.find(w => w.id === id));
@@ -735,18 +745,50 @@ function getAllWeather() {
 }
 
 function removeWaypoint(id, isReturn) {
+    console.log("🗑️ 削除実行: ID=" + id + " 復路=" + isReturn);
+
+    // 1. 対象の配列を決定
     var targetArray = isReturn ? returnWaypoints : waypoints;
     var idx = -1;
 
-    for (var i = 0;i < targetArray.length;i++) {
-        if (targetArray[i].id === id) { idx = i; break; }
+    // 2. IDで検索（型の違いを考慮して String に変換して比較）
+    for (var i = 0; i < targetArray.length; i++) {
+        if (String(targetArray[i].id) === String(id)) {
+            idx = i;
+            break;
+        }
     }
 
+    // 3. もしIDで見つからなかった場合の「最終手段」（名前と座標で照合）
+    if (idx === -1) {
+        console.log("⚠️ ID一致なし。予備検索を開始します...");
+        for (var j = 0; j < targetArray.length; j++) {
+            // IDがない場合や、IDの不整合がある場合に名前等で特定
+            if (targetArray[j].name === id) { 
+                idx = j;
+                break;
+            }
+        }
+    }
+
+    // 4. 見つかった場合の削除処理
     if (idx !== -1) {
-        if (targetArray[idx].marker) map.removeLayer(targetArray[idx].marker);
+        // 地図上のマーカーを消去
+        if (targetArray[idx].marker) {
+            map.removeLayer(targetArray[idx].marker);
+        }
+
+        // 配列から削除
         targetArray.splice(idx, 1);
+        console.log("✅ 削除しました。残り件数:", targetArray.length);
+
+        // 5. 画面更新とルート再計算（ここを忘れると消えたように見えない）
         renderWaypointList();
-        getRoute();
+        if (typeof getRoute === 'function') {
+            getRoute();
+        }
+    } else {
+        console.error("❌ 削除対象が見つかりませんでした (ID mismatch)");
     }
 }
 

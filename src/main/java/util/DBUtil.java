@@ -8,7 +8,7 @@ public class DBUtil {
     // データベース接続情報
     private static final String URL = "jdbc:mysql://localhost:3306/tripplan_db?serverTimezone=Asia/Tokyo";
     private static final String USER = "root"; // 設定したユーザー名
-    private static final String PASS = "pass"; // 設定したパスワード
+    private static final String PASS = "carp8912"; // 設定したパスワード
 
     public static Connection getConnection() throws SQLException {
         try {

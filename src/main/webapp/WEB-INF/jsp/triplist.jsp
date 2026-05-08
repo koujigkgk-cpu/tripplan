@@ -90,7 +90,7 @@
         </a>
     </c:forEach>
 
-    <a href="index.jsp" class="btn-back">← メインメニューに戻る</a>
+    <a href="tripplan.jsp" class="btn-back">← メインメニューに戻る</a>
 </div>
 
 </body>
