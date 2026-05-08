@@ -294,33 +294,50 @@ function clearAllMarkers() {
 // 引数に isReturn = false (デフォルトは行き) を追加
 function addNewWaypoint(latlng, name = null, stayTime = 0, isReturn = false) {
     var id = 'wp_' + Date.now() + Math.random().toString(36).substring(7);
-    var initialLatlng = latlng ? [latlng.lat, latlng.lng] : [map.getCenter().lat, map.getCenter().lng];
-
-    var wpName = name ? name : "取得中...";
+    
+    // 座標取得
+    var lat = latlng.lat !== undefined ? latlng.lat : (Array.isArray(latlng) ? latlng[0] : latlng.lat);
+    var lng = latlng.lng !== undefined ? latlng.lng : (Array.isArray(latlng) ? latlng[1] : latlng.lng);
+    var initialLatlng = [lat, lng];
 
     var wpObj = {
         id: id,
-        name: wpName,
+        name: name ? name : "経由地 " + (waypoints.length + returnWaypoints.length + 1),
+        lat: lat,
+        lng: lng,
         latlng: initialLatlng,
         stayTime: stayTime
     };
 
-    // ★ここが重要！振り分け処理
-    if (isReturn) {
-        wpObj.marker = createMarker(wpObj, 'orange'); // 帰りは色を変えると分かりやすい
-        returnWaypoints.push(wpObj); // 帰りの配列に入れる
+    // 🔴【超重要】getRoute を変えないための仕掛け
+    if (isReturnTrip) {
+        // 復路の場合：returnWaypointsに追加
+        returnWaypoints.push(wpObj);
+        // getRouteが「waypoints」しか見ないので、一時的に中身をすり替えるか、
+        // getRoute実行時だけ waypoints を returnWaypoints と同じにする
+        window.waypoints = returnWaypoints; 
     } else {
-        wpObj.marker = createMarker(wpObj, 'green');
-        waypoints.push(wpObj); // 行きの配列に入れる
+        // 往路の場合
+        waypoints.push(wpObj);
     }
 
+    // 🔴 ピンを表示
+    wpObj.marker = createMarker(wpObj, 'red');
+
+    // 住所更新
     if (!name) {
-        updateLocationData(id, { lat: initialLatlng[0], lng: initialLatlng[1] });
+        if (typeof updateLocationData === 'function') {
+            updateLocationData(id, { lat: lat, lng: lng });
+        }
     }
 
-    renderWaypointList(); // 一覧表示（これも行き帰りを分ける必要があります）
-}
-// 「帰り」の地点を追加するための専用関数
+    renderWaypointList();
+
+    // 🔴 getRouteを実行（これで線が引かれる）
+    if (typeof getRoute === 'function') {
+        getRoute();
+    }
+}// 「帰り」の地点を追加するための専用関数
 function addReturnWaypoint(latlng, name = null, stayTime = 0) {
 
     // 既存の addNewWaypoint とほぼ同じですが、入れる配列を returnWaypoints にします
@@ -1903,35 +1920,51 @@ function resetRouteState() {
     }
 }
 function renderWaypointList() {
-    // 往路
+    // 1. 地図上の「中継地ピン」を一旦すべてリセット（古いピンが残るのを防ぐ）
+    waypoints.forEach(function(wp) { if (wp.marker) map.removeLayer(wp.marker); });
+    returnWaypoints.forEach(function(wp) { if (wp.marker) map.removeLayer(wp.marker); });
+
+    // --- 往路（行き）のリスト描画 ---
     var container = document.getElementById('waypoint-list-container');
     if (container) {
         container.innerHTML = "";
         waypoints.forEach(function(wp) {
             var div = document.createElement('div');
             div.className = 'waypoint-item';
-            // 💡 ここから ⏱ 滞在： などの記述をすべて削除しました
-            div.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid #eee;">' +
-                '<span style="font-weight:bold;">往：📍 ' + wp.name + '</span>' +
-                '<button type="button" class="remove-btn" onclick="removeWaypoint(\'' + wp.id + '\', false)">削除</button>' +
-                '</div>';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold;">往：📍 ${wp.name}</span>
+                    <button type="button" class="remove-btn" onclick="removeWaypoint('${wp.id}', false)">削除</button>
+                </div>
+            `;
             container.appendChild(div);
+
+            // 往路を表示中（isReturnTripがfalse）なら地図にピンを立てる
+            if (!isReturnTrip) {
+                wp.marker = createMarker(wp, 'red'); // 赤いピンで描画
+            }
         });
     }
 
-    // 復路
+    // --- 復路（帰り）のリスト描画 ---
     var returnContainer = document.getElementById('return-waypoint-list-container');
     if (returnContainer) {
         returnContainer.innerHTML = "";
         returnWaypoints.forEach(function(wp) {
             var div = document.createElement('div');
             div.className = 'waypoint-item';
-            // 💡 復路からも ⏱ 滞在： を削除
-            div.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid #eee;">' +
-                '<span style="font-weight:bold; color:#e67e22;">復：📍 ' + wp.name + '</span>' +
-                '<button type="button" class="remove-btn" onclick="removeWaypoint(\'' + wp.id + '\', true)">削除</button>' +
-                '</div>';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; color:#e67e22;">復：📍 ${wp.name}</span>
+                    <button type="button" class="remove-btn" onclick="removeWaypoint('${wp.id}', true)">削除</button>
+                </div>
+            `;
             returnContainer.appendChild(div);
+
+            // 復路を表示中（isReturnTripがtrue）なら地図にピンを立てる
+            if (isReturnTrip) {
+                wp.marker = createMarker(wp, 'red'); // 復路も赤いピンで描画
+            }
         });
     }
 }
