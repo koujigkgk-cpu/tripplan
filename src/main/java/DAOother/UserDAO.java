@@ -10,9 +10,9 @@ import modelother.User;
 
 public class UserDAO {
     // データベース接続情報（ご自身の環境に合わせて password を書き換えてください）
-    private final String URL = "jdbc:mysql://localhost:3306/tripplan_db?useSSL=false&allowPublicKeyRetrieval=true";
-    private final String USER = "root";
-    private final String PASS = "carp8912"; 
+    private final String URL = System.getenv("DB_URL");
+    private final String USER = System.getenv("DB_USER");
+    private final String PASS = System.getenv("DB_PASS");
 
     /**
      * 新規ユーザーを登録する
