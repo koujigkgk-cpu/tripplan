@@ -30,7 +30,6 @@
 
   <build>
     <finalName>ROOT</finalName>
-    <sourceDirectory>src/main/java</sourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -38,6 +37,7 @@
         <version>3.3.2</version>
         <configuration>
             <warSourceDirectory>src/main/webapp</warSourceDirectory>
+            <failOnMissingWebXml>false</failOnMissingWebXml>
         </configuration>
       </plugin>
     </plugins>
