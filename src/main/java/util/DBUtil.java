@@ -1,21 +1,23 @@
-package util; // パッケージ名はご自身の環境に合わせて調整してください
+package util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBUtil {
-    // データベース接続情報
-    private static final String URL = "jdbc:mysql://localhost:3306/tripplan_db?serverTimezone=Asia/Tokyo";
-    private static final String USER = "root"; // 設定したユーザー名
-    private static final String PASS = "carp8912"; // 設定したパスワード
+    // Renderの設定画面(Environment Variables)から値を読み込むように変更
+    private static final String URL = System.getenv("DB_URL");
+    private static final String USER = System.getenv("DB_USER");
+    private static final String PASS = System.getenv("DB_PASS");
 
     public static Connection getConnection() throws SQLException {
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            // PostgreSQL用のドライバーを読み込む
+            Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+        // 環境変数から取得したURL、USER、PASSを使って接続
         return DriverManager.getConnection(URL, USER, PASS);
     }
 }
