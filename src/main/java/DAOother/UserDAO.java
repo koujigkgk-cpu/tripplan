@@ -22,7 +22,7 @@ public class UserDAO {
      */
     public boolean registerUser(String id, String pass) {
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            Class.forName("org.postgresql.Driver");
             try (Connection conn = DriverManager.getConnection(URL, USER, PASS)) {
                 String sql = "INSERT INTO users (user_id, password) VALUES (?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -46,7 +46,7 @@ public class UserDAO {
      */
     public User findByUser(String id, String pass) {
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            Class.forName("org.postgresql.Driver");
             try (Connection conn = DriverManager.getConnection(URL, USER, PASS)) {
                 // IDとパスワードが両方一致するレコードを探す
                 String sql = "SELECT user_id, password FROM users WHERE user_id = ? AND password = ?";
